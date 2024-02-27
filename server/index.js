@@ -44,11 +44,27 @@ socket.on('buzz', ({ sessionId, playerName }) => {
     }
 });
 
-socket.on('startGame', (sessionId) => {
+socket.on('nextQuestion', ({ sessionId }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
+        sessions[sessionId].currentQuestionIndex += 1;
+        if (sessions[sessionId].currentQuestionIndex < sessions[sessionId].questions.length) {
+            const currentQuestion = sessions[sessionId].questions[sessions[sessionId].currentQuestionIndex];
+            console.log(`Moving to next question in session ${sessionId}`);
+            io.to(sessionId).emit('question', { question: currentQuestion, sessionId });
+        } else {
+            console.log(`Game over in session ${sessionId}`);
+            io.to(sessionId).emit('gameOver', { sessionId });
+        }
+    }
+});
+
+socket.on('startGame', ({ sessionId }) => {
+    if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
+        console.log(`Game starting in session ${sessionId}`);
         sessions[sessionId].state = 'active';
-        io.to(sessionId).emit('gameStarted');
-        console.log(`Game started for session ${sessionId}`);
+        sessions[sessionId].currentQuestionIndex = 0; // Assuming questions are stored in an array
+        const currentQuestion = sessions[sessionId].questions[sessions[sessionId].currentQuestionIndex];
+        io.to(sessionId).emit('question', { question: currentQuestion, sessionId });
     }
 });
 

@@ -44,9 +44,14 @@ const Admin = () => {
   };
 
   const startGame = () => {
-    socket.emit('startGame', sessionId);
-    console.log('Game started');
-  };
+    console.log(`Starting game for session ${sessionId}`);
+    socket.emit('startGame', { sessionId });
+};
+
+const nextQuestion = () => {
+    console.log(`Requesting next question for session ${sessionId}`);
+    socket.emit('nextQuestion', { sessionId });
+};
 
   return (
     <div>
@@ -57,6 +62,7 @@ const Admin = () => {
           <input type="file" onChange={handleFileChange} />
           <button onClick={uploadQuestions}>Upload Questions</button>
           <button onClick={startGame}>Start Game</button>
+        <button onClick={nextQuestion}>Next Question</button>
         </>
       ) : (
         <button onClick={createSession}>Create Game Session</button>

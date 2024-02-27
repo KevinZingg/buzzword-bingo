@@ -17,9 +17,21 @@ const Player = () => {
       console.log(`${playerName} buzzed in session ${sessionId}`);
     });
 
+    socket.on('question', ({ question, sessionId }) => {
+        console.log(`Received question for session ${sessionId}: ${question}`);
+        // Display the question to the player
+    });
+
+    socket.on('gameOver', ({ sessionId }) => {
+        console.log(`Game over for session ${sessionId}`);
+        // Handle game over logic
+    });
+
     return () => {
       socket.off('playerJoined');
       socket.off('playerBuzzed');
+      socket.off('question');
+      socket.off('gameOver');
     };
   }, []);
 
