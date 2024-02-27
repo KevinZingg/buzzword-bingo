@@ -17,6 +17,26 @@ let sessions = {}; // Store session data
 io.on('connection', (socket) => {
   console.log('a user connected', socket.id);
 
+  socket.on('joinSession', ({ sessionId, playerName }) => {
+    if (sessions[sessionId]) {
+        // Add player to the session
+        sessions[sessionId].players.push({ id: socket.id, name: playerName });
+        socket.join(sessionId);
+        console.log(`${playerName} joined session ${sessionId}`);
+        // Broadcast to the session that a new player has joined
+        io.to(sessionId).emit('playerJoined', { playerName, sessionId });
+    } else {
+        console.log(`Session ${sessionId} not found`);
+        socket.emit('error', 'Session not found');
+    }
+});
+
+socket.on('buzz', ({ sessionId, playerName }) => {
+    console.log(`${playerName} buzzed in session ${sessionId}`);
+    // Broadcast the buzz event to all clients in the session
+    io.to(sessionId).emit('playerBuzzed', { playerName, sessionId });
+});
+
   socket.on('uploadQuestions', (sessionId, questions) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
         sessions[sessionId].questions = questions;

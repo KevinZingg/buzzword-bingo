@@ -1,5 +1,5 @@
 // src/components/Player.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 
 const socket = io('http://localhost:3001');
@@ -8,13 +8,29 @@ const Player = () => {
   const [sessionId, setSessionId] = useState('');
   const [name, setName] = useState('');
 
+  useEffect(() => {
+    socket.on('playerJoined', ({ playerName, sessionId }) => {
+      console.log(`${playerName} has joined the session ${sessionId}`);
+    });
+
+    socket.on('playerBuzzed', ({ playerName, sessionId }) => {
+      console.log(`${playerName} buzzed in session ${sessionId}`);
+    });
+
+    return () => {
+      socket.off('playerJoined');
+      socket.off('playerBuzzed');
+    };
+  }, []);
+
   const joinSession = () => {
+    console.log(`${name} attempting to join session ${sessionId}`);
     socket.emit('joinSession', { sessionId, playerName: name });
   };
 
   const buzzIn = () => {
-    socket.emit('buzz', { sessionId, playerId: socket.id });
-    console.log('Buzzed in');
+    console.log(`${name} buzzed in session ${sessionId}`);
+    socket.emit('buzz', { sessionId, playerName: name });
   };
 
   return (
