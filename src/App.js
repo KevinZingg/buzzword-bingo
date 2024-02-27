@@ -1,23 +1,25 @@
-import logo from './logo.svg';
-import './App.css';
+// src/App.js
+import React, { useState } from 'react';
+import io from 'socket.io-client';
+import Home from './components/Home';
+import Admin from './components/Admin';
+import Player from './components/Player';
+
+const socket = io('http://localhost:3001'); // Adjust to match your server's address
 
 function App() {
+  const [role, setRole] = useState(''); // 'admin' or 'player'
+
+  const handleRoleSelected = (selectedRole) => {
+    console.log(`Role selected: ${selectedRole}`);
+    setRole(selectedRole);
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      {role === '' && <Home onRoleSelected={handleRoleSelected} />}
+      {role === 'admin' && <Admin socket={socket} />}
+      {role === 'player' && <Player socket={socket} />}
     </div>
   );
 }
