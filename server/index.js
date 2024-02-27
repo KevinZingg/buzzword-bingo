@@ -19,12 +19,19 @@ io.on('connection', (socket) => {
 
   socket.on('joinSession', ({ sessionId, playerName }) => {
     if (sessions[sessionId]) {
-        // Add player to the session
-        sessions[sessionId].players.push({ id: socket.id, name: playerName });
+        // Check if the player is already in the session
+        const existingPlayer = sessions[sessionId].players.find(p => p.id === socket.id);
+        if (!existingPlayer) {
+            // Add player to the session with initial score if they're not already in it
+            sessions[sessionId].players.push({ id: socket.id, name: playerName, score: 0 });
+            console.log(`${playerName} joined session ${sessionId}`);
+            // Emit to the specific session that a new player has joined
+            io.to(sessionId).emit('playerJoined', { playerName, sessionId });
+        } else {
+            // Optionally handle the case where the player is already in the session
+            console.log(`${playerName} is already in session ${sessionId}`);
+        }
         socket.join(sessionId);
-        console.log(`${playerName} joined session ${sessionId}`);
-        // Broadcast to the session that a new player has joined
-        io.to(sessionId).emit('playerJoined', { playerName, sessionId });
     } else {
         console.log(`Session ${sessionId} not found`);
         socket.emit('error', 'Session not found');
@@ -36,21 +43,36 @@ io.on('connection', (socket) => {
 socket.on('buzz', ({ sessionId, playerName }) => {
     if (sessions[sessionId] && sessions[sessionId].state === 'active') {
         sessions[sessionId].state = 'paused'; // Pause the game
-        sessions[sessionId].buzzedPlayer = playerName; // Store who buzzed
+        // Store both playerName and socket.id of the buzzed player
+        sessions[sessionId].buzzedPlayer = { name: playerName, id: socket.id };
         io.to(sessionId).emit('gamePaused', { playerName }); // Notify all clients in the session
         console.log(`${playerName} buzzed in session ${sessionId}`);
     }
 });
 
-socket.on('awardPoints', ({ sessionId, playerName, points }) => {
-    // Implementation depends on how you're tracking player scores.
-    // For simplicity, you might keep a 'score' field in the player object.
-    console.log(`${playerName} awarded ${points} points in session ${sessionId}`);
-    sessions[sessionId].state = 'active';
-    io.to(sessionId).emit('gameResumed', { sessionId }); // Optionally notify clients
-    // Find the player and update their score
-    // Then notify all clients in the session about the updated scores
+
+socket.on('awardPoints', ({ sessionId, points }) => {
+    const session = sessions[sessionId];
+    if (session && session.buzzedPlayer) {
+        const player = session.players.find(p => p.id === session.buzzedPlayer.id);
+        if (player) {
+            player.score += points;
+            io.to(sessionId).emit('scoreUpdate', { playerName: player.name, score: player.score });
+            console.log(`Score updated for ${player.name} to ${player.score} in session ${sessionId}`);
+            // Reset buzzedPlayer after awarding points
+            session.buzzedPlayer = null;
+        } else {
+            console.log(`Buzzed player not found in session ${sessionId}`);
+        }
+    } else {
+        console.log(`Session ${sessionId} not found or no player buzzed`);
+    }
 });
+
+
+
+
+
 
 socket.on('uploadQuestions', ({ sessionId, questions }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
@@ -133,6 +155,7 @@ socket.on('score', ({ sessionId, playerId, score }) => {
     console.log(`Player ${playerId} scored ${score} in session ${sessionId}`);
     // Example: Emitting an update to all clients
     io.to(sessionId).emit('scoreUpdate', { playerId, score });
+    setScore(score); // Correctly updates score
 });
 
   socket.on('createSession', ({ adminName }) => {
@@ -142,15 +165,7 @@ socket.on('score', ({ sessionId, playerId, score }) => {
     socket.emit('sessionCreated', { sessionId });
   });
 
-  socket.on('joinSession', ({ sessionId, playerName }) => {
-    if (sessions[sessionId]) {
-      sessions[sessionId].players.push({ id: socket.id, name: playerName });
-      socket.join(sessionId);
-      io.to(sessionId).emit('playerJoined', { players: sessions[sessionId].players });
-    } else {
-      socket.emit('error', 'Session not found');
-    }
-  });
+
 
   // Add more event handlers for game flow here
 

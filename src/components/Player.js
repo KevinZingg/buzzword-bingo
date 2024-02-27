@@ -8,6 +8,7 @@ const Player = () => {
   const [sessionId, setSessionId] = useState('');
   const [name, setName] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(null); // State to hold the current question
+  const [score, setScore] = useState(0); // Added score state
 
   useEffect(() => {
     socket.on('playerJoined', ({ playerName, sessionId }) => {
@@ -20,32 +21,30 @@ const Player = () => {
 
     socket.on('reopenQuestion', ({ question }) => {
         console.log(`Reopened question: ${question.question}`);
-        // Update UI to show the question again, allowing for new buzz attempts
     });
 
-    // Updated to handle receiving a question
     socket.on('question', ({ question }) => {
         console.log(`Received question for session ${sessionId}:`, question);
-        setCurrentQuestion(question); // Update the current question state
+        setCurrentQuestion(question);
+    });
+
+    socket.on('scoreUpdate', ({ playerName, score }) => {
+        if (playerName === name) {
+          setScore(score); // Correctly updates score
+        }
     });
 
     socket.on('gamePaused', ({ playerName }) => {
-        if (playerName === name) { // 'name' is the player's name from the state
+        if (playerName === name) {
             console.log("You've buzzed in. Waiting for the admin to award points.");
         } else {
             console.log(`Game paused because ${playerName} buzzed in.`);
         }
     });
 
-    socket.on('gameResumed', ({ sessionId }) => {
-        console.log(`Game resumed for session ${sessionId}`);
-        // Handle any UI updates or state changes needed to enable buzzing again
-    });
-    
-
     socket.on('gameOver', ({ sessionId }) => {
         console.log(`Game over for session ${sessionId}`);
-        setCurrentQuestion(null); // Reset the current question on game over
+        setCurrentQuestion(null);
     });
 
     return () => {
@@ -55,8 +54,9 @@ const Player = () => {
       socket.off('gameOver');
       socket.off('gamePaused');
       socket.off('reopenQuestion');
+      socket.off('scoreUpdate');
     };
-  }, [sessionId]);
+  }, [sessionId, name]); // Include name in dependencies
 
   const joinSession = () => {
     console.log(`${name} attempting to join session ${sessionId}`);
@@ -79,9 +79,9 @@ const Player = () => {
         <div>
           <h3>Current Question:</h3>
           <p>{currentQuestion.question}</p>
-          {/* Optionally display more information about the question */}
         </div>
       )}
+      <p>Your Score: {score}</p> {/* Display the player's score */}
     </div>
   );
 };
