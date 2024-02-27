@@ -46,6 +46,8 @@ socket.on('awardPoints', ({ sessionId, playerName, points }) => {
     // Implementation depends on how you're tracking player scores.
     // For simplicity, you might keep a 'score' field in the player object.
     console.log(`${playerName} awarded ${points} points in session ${sessionId}`);
+    sessions[sessionId].state = 'active';
+    io.to(sessionId).emit('gameResumed', { sessionId }); // Optionally notify clients
     // Find the player and update their score
     // Then notify all clients in the session about the updated scores
 });
@@ -83,11 +85,16 @@ socket.on('startGame', ({ sessionId }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
         console.log(`Game starting in session ${sessionId}`);
         sessions[sessionId].state = 'active';
-        sessions[sessionId].currentQuestionIndex = 0; // Assuming questions are stored in an array
-        const currentQuestion = sessions[sessionId].questions[sessions[sessionId].currentQuestionIndex];
-        io.to(sessionId).emit('question', { question: currentQuestion, sessionId });
+        sessions[sessionId].currentQuestionIndex = 0; // Make sure this is correctly initialized
+        if (sessions[sessionId].questions && sessions[sessionId].questions.length > 0) {
+            const currentQuestion = sessions[sessionId].questions[sessions[sessionId].currentQuestionIndex];
+            io.to(sessionId).emit('question', { question: currentQuestion, sessionId });
+        } else {
+            console.log(`No questions available in session ${sessionId}`);
+        }
     }
 });
+
 
 socket.on('buzz', ({ sessionId, playerName }) => {
     const session = sessions[sessionId];
@@ -105,6 +112,8 @@ socket.on('adminDecision', ({ sessionId, decision }) => {
         switch (decision) {
             case 'correct':
                 // Move to next question or end game if it was the last question
+                session.state = 'active';
+                io.to(sessionId).emit('gameResumed', { sessionId }); // Notify clients to allow buzzing again
                 break;
             case 'incorrect':
                 // Optionally open the same question again

@@ -24,9 +24,17 @@ const Admin = () => {
             setIsGamePaused(true);
         });
 
+
+        socket.on('buzzed', ({ playerName, sessionId }) => {
+            console.log(`${playerName} buzzed in session ${sessionId}`);
+            setBuzzedPlayer(playerName);
+            // Assuming currentQuestion is already set when the question is sent out
+        });
+
         socket.on('question', ({ question }) => {
             console.log(`Current Question: ${question.question}`); // Log the current question
             setCurrentQuestion(question);
+            setBuzzedPlayer(''); // Reset buzzed player for the new question
         });
 
         // Clean up on component unmount
@@ -34,6 +42,7 @@ const Admin = () => {
             socket.off('sessionCreated');
             socket.off('question');
             socket.off('gamePaused');
+            socket.off('buzzed');
         };
     }, []);
 
@@ -87,6 +96,7 @@ const Admin = () => {
     // Inside Admin component
     const handleAdminDecision = (decision) => {
         socket.emit('adminDecision', { sessionId, decision });
+        setBuzzedPlayer(''); // Reset after decision
     };
 
 
@@ -105,6 +115,14 @@ const Admin = () => {
                             <h3>Current Question:</h3>
                             <p>{currentQuestion.question}</p>
                             {/* Display solution or created_at if needed */}
+                        </div>
+                    )}
+
+                    {buzzedPlayer && (
+                        <div>
+                            <p>{buzzedPlayer} buzzed in. Decide:</p>
+                            <button onClick={() => handleAdminDecision('correct')}>Correct</button>
+                            <button onClick={() => handleAdminDecision('incorrect')}>Incorrect</button>
                         </div>
                     )}
                     {isGamePaused && (

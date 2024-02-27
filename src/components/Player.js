@@ -37,6 +37,12 @@ const Player = () => {
         }
     });
 
+    socket.on('gameResumed', ({ sessionId }) => {
+        console.log(`Game resumed for session ${sessionId}`);
+        // Handle any UI updates or state changes needed to enable buzzing again
+    });
+    
+
     socket.on('gameOver', ({ sessionId }) => {
         console.log(`Game over for session ${sessionId}`);
         setCurrentQuestion(null); // Reset the current question on game over
