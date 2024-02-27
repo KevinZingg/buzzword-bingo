@@ -31,16 +31,37 @@ io.on('connection', (socket) => {
     }
 });
 
+// Inside io.on('connection', (socket) => { ... })
+
 socket.on('buzz', ({ sessionId, playerName }) => {
-    console.log(`${playerName} buzzed in session ${sessionId}`);
-    // Broadcast the buzz event to all clients in the session
-    io.to(sessionId).emit('playerBuzzed', { playerName, sessionId });
+    if (sessions[sessionId] && sessions[sessionId].state === 'active') {
+        sessions[sessionId].state = 'paused'; // Pause the game
+        sessions[sessionId].buzzedPlayer = playerName; // Store who buzzed
+        io.to(sessionId).emit('gamePaused', { playerName }); // Notify all clients in the session
+        console.log(`${playerName} buzzed in session ${sessionId}`);
+    }
 });
 
-  socket.on('uploadQuestions', (sessionId, questions) => {
+socket.on('awardPoints', ({ sessionId, playerName, points }) => {
+    // Implementation depends on how you're tracking player scores.
+    // For simplicity, you might keep a 'score' field in the player object.
+    console.log(`${playerName} awarded ${points} points in session ${sessionId}`);
+    // Find the player and update their score
+    // Then notify all clients in the session about the updated scores
+});
+
+socket.on('uploadQuestions', ({ sessionId, questions }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
-        sessions[sessionId].questions = questions;
+        // Assuming each question is an object with question, solution, created_at
+        sessions[sessionId].questions = questions.map(q => ({
+            question: q.question,
+            solution: q.solution,
+            // Optionally convert created_at to a JavaScript Date object
+            // created_at: new Date(q.created_at)
+        }));
         console.log(`Questions uploaded for session ${sessionId}`);
+    } else {
+        socket.emit('error', `Failed to upload questions for session ${sessionId}`);
     }
 });
 
@@ -68,13 +89,35 @@ socket.on('startGame', ({ sessionId }) => {
     }
 });
 
-socket.on('buzz', ({ sessionId, playerId }) => {
-    if (sessions[sessionId] && sessions[sessionId].state === 'active') {
-        sessions[sessionId].state = 'paused';
-        io.to(sessionId).emit('buzzed', { playerId });
-        console.log(`Player ${playerId} buzzed in session ${sessionId}`);
+socket.on('buzz', ({ sessionId, playerName }) => {
+    const session = sessions[sessionId];
+    if (session && session.state === 'active') {
+        session.state = 'paused';
+        session.buzzedPlayer = playerName; // Track who buzzed
+        console.log(`${playerName} buzzed in session ${sessionId}`);
+        io.to(sessionId).emit('buzzed', { playerName, sessionId });
     }
 });
+
+socket.on('adminDecision', ({ sessionId, decision }) => {
+    const session = sessions[sessionId];
+    if (session) {
+        switch (decision) {
+            case 'correct':
+                // Move to next question or end game if it was the last question
+                break;
+            case 'incorrect':
+                // Optionally open the same question again
+                session.state = 'active'; // Allow re-buzzing
+                io.to(sessionId).emit('reopenQuestion', { question: session.questions[session.currentQuestionIndex] });
+                break;
+            // Handle other decisions as necessary
+        }
+        console.log(`Admin made a decision: ${decision} for session ${sessionId}`);
+    }
+});
+
+
 
 socket.on('score', ({ sessionId, playerId, score }) => {
     // Implement scoring logic based on your game's requirements

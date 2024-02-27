@@ -7,6 +7,7 @@ const socket = io('http://localhost:3001');
 const Player = () => {
   const [sessionId, setSessionId] = useState('');
   const [name, setName] = useState('');
+  const [currentQuestion, setCurrentQuestion] = useState(null); // State to hold the current question
 
   useEffect(() => {
     socket.on('playerJoined', ({ playerName, sessionId }) => {
@@ -17,14 +18,28 @@ const Player = () => {
       console.log(`${playerName} buzzed in session ${sessionId}`);
     });
 
-    socket.on('question', ({ question, sessionId }) => {
-        console.log(`Received question for session ${sessionId}: ${question}`);
-        // Display the question to the player
+    socket.on('reopenQuestion', ({ question }) => {
+        console.log(`Reopened question: ${question.question}`);
+        // Update UI to show the question again, allowing for new buzz attempts
+    });
+
+    // Updated to handle receiving a question
+    socket.on('question', ({ question }) => {
+        console.log(`Received question for session ${sessionId}:`, question);
+        setCurrentQuestion(question); // Update the current question state
+    });
+
+    socket.on('gamePaused', ({ playerName }) => {
+        if (playerName === name) { // 'name' is the player's name from the state
+            console.log("You've buzzed in. Waiting for the admin to award points.");
+        } else {
+            console.log(`Game paused because ${playerName} buzzed in.`);
+        }
     });
 
     socket.on('gameOver', ({ sessionId }) => {
         console.log(`Game over for session ${sessionId}`);
-        // Handle game over logic
+        setCurrentQuestion(null); // Reset the current question on game over
     });
 
     return () => {
@@ -32,8 +47,10 @@ const Player = () => {
       socket.off('playerBuzzed');
       socket.off('question');
       socket.off('gameOver');
+      socket.off('gamePaused');
+      socket.off('reopenQuestion');
     };
-  }, []);
+  }, [sessionId]);
 
   const joinSession = () => {
     console.log(`${name} attempting to join session ${sessionId}`);
@@ -52,6 +69,13 @@ const Player = () => {
       <input type="text" placeholder="Your Name" value={name} onChange={e => setName(e.target.value)} />
       <button onClick={joinSession}>Join Game</button>
       <button onClick={buzzIn}>Buzz</button>
+      {currentQuestion && (
+        <div>
+          <h3>Current Question:</h3>
+          <p>{currentQuestion.question}</p>
+          {/* Optionally display more information about the question */}
+        </div>
+      )}
     </div>
   );
 };
