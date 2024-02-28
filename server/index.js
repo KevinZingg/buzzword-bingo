@@ -57,6 +57,8 @@ socket.on('awardPoints', ({ sessionId, points }) => {
         const player = session.players.find(p => p.id === session.buzzedPlayer.id);
         if (player) {
             player.score += points;
+            // Emit an updated players list to all clients in the session
+            io.to(sessionId).emit('updateLeaderboard', sessions[sessionId].players);
             io.to(sessionId).emit('scoreUpdate', { playerName: player.name, score: player.score });
             console.log(`Score updated for ${player.name} to ${player.score} in session ${sessionId}`);
             // Reset buzzedPlayer after awarding points
@@ -69,8 +71,21 @@ socket.on('awardPoints', ({ sessionId, points }) => {
     }
 });
 
+socket.on('pauseGame', ({ sessionId }) => {
+    if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
+        sessions[sessionId].state = 'paused';
+        io.to(sessionId).emit('gamePaused');
+        console.log(`Game paused in session ${sessionId}`);
+    }
+});
 
-
+socket.on('closeGame', ({ sessionId }) => {
+    if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
+        delete sessions[sessionId]; // Remove the session from the sessions object
+        io.to(sessionId).emit('gameClosed');
+        console.log(`Game closed in session ${sessionId}`);
+    }
+});
 
 
 
@@ -96,12 +111,22 @@ socket.on('nextQuestion', ({ sessionId }) => {
             const currentQuestion = sessions[sessionId].questions[sessions[sessionId].currentQuestionIndex];
             console.log(`Moving to next question in session ${sessionId}`);
             io.to(sessionId).emit('question', { question: currentQuestion, sessionId });
+            // Start a 10-second timer
+            clearTimeout(sessions[sessionId].questionTimeout); // Clear any existing timer
+            sessions[sessionId].questionTimeout = setTimeout(() => {
+                console.log(`Time's up for question in session ${sessionId}`);
+                io.to(sessionId).emit('timesUp', sessionId);
+                // Here you can define what happens when time is up, for example:
+                // Move to the next question or emit an event to notify players
+            }, 10000); // 10 seconds
         } else {
             console.log(`Game over in session ${sessionId}`);
             io.to(sessionId).emit('gameOver', { sessionId });
         }
     }
 });
+
+
 
 socket.on('startGame', ({ sessionId }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
@@ -121,12 +146,14 @@ socket.on('startGame', ({ sessionId }) => {
 socket.on('buzz', ({ sessionId, playerName }) => {
     const session = sessions[sessionId];
     if (session && session.state === 'active') {
+        clearTimeout(session.questionTimeout); // Cancel the timer
         session.state = 'paused';
-        session.buzzedPlayer = playerName; // Track who buzzed
+        session.buzzedPlayer = { name: playerName, id: socket.id };
         console.log(`${playerName} buzzed in session ${sessionId}`);
-        io.to(sessionId).emit('buzzed', { playerName, sessionId });
+        io.to(sessionId).emit('gamePaused', { playerName, sessionId });
     }
 });
+
 
 socket.on('adminDecision', ({ sessionId, decision }) => {
     const session = sessions[sessionId];

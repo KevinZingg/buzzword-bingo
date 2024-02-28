@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import Papa from 'papaparse';
+import Leaderboard from './Leaderboard';
+
 
 const socket = io('http://localhost:3001'); // Ensure this matches your server URL
 
@@ -11,6 +13,7 @@ const Admin = () => {
     const [currentQuestion, setCurrentQuestion] = useState(null);
     const [buzzedPlayer, setBuzzedPlayer] = useState('');
     const [isGamePaused, setIsGamePaused] = useState(false);
+    const [timer, setTimer] = useState(10); // Initialize with 10 seconds for the countdown
 
 
     useEffect(() => {
@@ -31,10 +34,20 @@ const Admin = () => {
             // Assuming currentQuestion is already set when the question is sent out
         });
 
-        socket.on('question', ({ question }) => {
-            console.log(`Current Question: ${question.question}`); // Log the current question
-            setCurrentQuestion(question);
-            setBuzzedPlayer(''); // Reset buzzed player for the new question
+    // Listen for a new question to start the timer
+    socket.on('question', () => {
+        setTimer(10); // Reset timer to 10 seconds
+        // Start the countdown
+        const interval = setInterval(() => {
+            setTimer((prevTimer) => prevTimer > 0 ? prevTimer - 1 : 0);
+        }, 1000);
+        setTimeout(() => clearInterval(interval), 10000); // Clear interval after 10 seconds
+    });
+
+            // Listen for the timesUp event to stop the timer
+        socket.on('timesUp', () => {
+            setTimer(0); // Reset timer
+            alert("Time has expired for the current question. Please proceed."); // Custom message for admin
         });
 
         // Clean up on component unmount
@@ -43,6 +56,7 @@ const Admin = () => {
             socket.off('question');
             socket.off('gamePaused');
             socket.off('buzzed');
+            socket.off('timesUp');
         };
     }, []);
 
@@ -99,6 +113,14 @@ const Admin = () => {
         setBuzzedPlayer(''); // Reset after decision
     };
 
+    const pauseGame = () => {
+        socket.emit('pauseGame', { sessionId });
+    };
+    
+    const closeGame = () => {
+        socket.emit('closeGame', { sessionId });
+    };
+
 
     return (
         <div>
@@ -110,11 +132,13 @@ const Admin = () => {
                     <button onClick={uploadQuestions}>Upload Questions</button>
                     <button onClick={startGame}>Start Game</button>
                     <button onClick={nextQuestion}>Next Question</button>
+                    <button onClick={pauseGame}>Pause Game</button>
+                    <button onClick={closeGame}>Close Game</button>
                     {currentQuestion && (
                         <div>
                             <h3>Current Question:</h3>
                             <p>{currentQuestion.question}</p>
-                            {/* Display solution or created_at if needed */}
+                            <p>Time left: {timer} seconds</p> {/* Display the countdown timer */}
                         </div>
                     )}
 
@@ -130,6 +154,7 @@ const Admin = () => {
                             <p>{buzzedPlayer} buzzed in. Award points?</p>
                             <button onClick={() => awardPoints(1)}>Yes</button>
                             <button onClick={() => awardPoints(0)}>No</button>
+                            <Leaderboard sessionId={sessionId} />
                         </div>
                     )}
                 </>
