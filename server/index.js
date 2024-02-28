@@ -25,6 +25,8 @@ io.on('connection', (socket) => {
             // Add player to the session with initial score if they're not already in it
             sessions[sessionId].players.push({ id: socket.id, name: playerName, score: 0 });
             console.log(`${playerName} joined session ${sessionId}`);
+            // After adding the player to the session
+            socket.emit('joinSuccess'); // Emit back to the player
             // Emit to the specific session that a new player has joined
             io.to(sessionId).emit('playerJoined', { playerName, sessionId });
         } else {

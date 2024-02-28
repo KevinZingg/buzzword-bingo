@@ -35,14 +35,21 @@ const Admin = () => {
         });
 
     // Listen for a new question to start the timer
-    socket.on('question', () => {
-        setTimer(10); // Reset timer to 10 seconds
-        // Start the countdown
-        const interval = setInterval(() => {
-            setTimer((prevTimer) => prevTimer > 0 ? prevTimer - 1 : 0);
-        }, 1000);
-        setTimeout(() => clearInterval(interval), 10000); // Clear interval after 10 seconds
-    });
+// Inside the useEffect hook, adjust the 'question' event listener
+socket.on('question', ({ question }) => {
+    setCurrentQuestion(question); // Assuming the question object includes the question text and answer
+    setTimer(10); // Reset timer to 10 seconds
+    const interval = setInterval(() => {
+        setTimer((prevTimer) => prevTimer > 0 ? prevTimer - 1 : 0);
+    }, 1000);
+    setTimeout(() => clearInterval(interval), 10000); // Clear interval after 10 seconds
+});
+
+
+socket.on('gameOver', () => {
+    alert("Game done"); // Notify the admin that the game is over
+    // Any additional cleanup or UI adjustments can be handled here
+});
 
             // Listen for the timesUp event to stop the timer
         socket.on('timesUp', () => {
@@ -57,6 +64,7 @@ const Admin = () => {
             socket.off('gamePaused');
             socket.off('buzzed');
             socket.off('timesUp');
+            socket.off('gameOver'); // Ensure to clean up this listener as well
         };
     }, []);
 
@@ -137,8 +145,9 @@ const Admin = () => {
                     {currentQuestion && (
                         <div>
                             <h3>Current Question:</h3>
-                            <p>{currentQuestion.question}</p>
-                            <p>Time left: {timer} seconds</p> {/* Display the countdown timer */}
+                            <p>Question: {currentQuestion.question}</p>
+                            <p>Answer: {currentQuestion.solution} </p> {/* Display the answer */}
+                            <p>Time left: {timer} seconds</p>
                         </div>
                     )}
 

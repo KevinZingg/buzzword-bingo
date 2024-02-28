@@ -11,11 +11,16 @@ const Player = () => {
   const [currentQuestion, setCurrentQuestion] = useState(null); // State to hold the current question
   const [score, setScore] = useState(0); // Added score state
   const [timer, setTimer] = useState(0);
+  const [hasJoined, setHasJoined] = useState(false); // State to track if the player has joined the session
 
 
   useEffect(() => {
     socket.on('playerJoined', ({ playerName, sessionId }) => {
       console.log(`${playerName} has joined the session ${sessionId}`);
+    });
+
+    socket.on('joinSuccess', () => {
+      setHasJoined(true); // Update join status upon successful join
     });
 
     socket.on('playerBuzzed', ({ playerName, sessionId }) => {
@@ -70,12 +75,14 @@ const Player = () => {
       socket.off('scoreUpdate');
       clearInterval(countdown);
       socket.off('timesUp');
+      socket.off('joinSuccess'); // Cleanup listener
     };
   }, [sessionId, name, socket]); // Include name in dependencies
 
   const joinSession = () => {
     console.log(`${name} attempting to join session ${sessionId}`);
     socket.emit('joinSession', { sessionId, playerName: name });
+    // Assuming the server emits 'joinSuccess' when join is successful
   };
 
   const buzzIn = () => {
@@ -86,19 +93,27 @@ const Player = () => {
   return (
     <div>
       <h2>Player Join</h2>
-      <input type="text" placeholder="Session ID" value={sessionId} onChange={e => setSessionId(e.target.value)} />
-      <input type="text" placeholder="Your Name" value={name} onChange={e => setName(e.target.value)} />
-      <button onClick={joinSession}>Join Game</button>
-      <button onClick={buzzIn}>Buzz</button>
-      {currentQuestion && (
-        <div>
-          <h3>Current Question:</h3>
-          <p>{currentQuestion.question}</p>
-          <p>Timer: {timer}</p> {/* Display the timer */}
-        </div>
+      {!hasJoined ? (
+        <>
+          <input type="text" placeholder="Session ID" value={sessionId} onChange={e => setSessionId(e.target.value)} />
+          <input type="text" placeholder="Your Name" value={name} onChange={e => setName(e.target.value)} />
+          <button onClick={joinSession}>Join Game</button>
+        </>
+      ) : (
+        <>
+          <h3>Welcome, {name}!</h3>
+          <button onClick={buzzIn}>Buzz</button>
+          {currentQuestion && (
+            <div>
+              <h4>Current Question:</h4>
+              <p>{currentQuestion.question}</p>
+              <p>Timer: {timer}</p> {/* Display the timer */}
+            </div>
+          )}
+          <p>Your Score: {score}</p> {/* Display the player's score */}
+          <Leaderboard sessionId={sessionId} />
+        </>
       )}
-      <p>Your Score: {score}</p> {/* Display the player's score */}
-      <Leaderboard sessionId={sessionId} />
     </div>
   );
 };
