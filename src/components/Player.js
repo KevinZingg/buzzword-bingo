@@ -2,16 +2,22 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import Leaderboard from './Leaderboard';
+import { motion } from 'framer-motion';
 
 const socket = io('http://localhost:3001');
 
 const Player = () => {
   const [sessionId, setSessionId] = useState('');
   const [name, setName] = useState('');
-  const [currentQuestion, setCurrentQuestion] = useState(null); // State to hold the current question
-  const [score, setScore] = useState(0); // Added score state
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [score, setScore] = useState(0);
   const [timer, setTimer] = useState(0);
-  const [hasJoined, setHasJoined] = useState(false); // State to track if the player has joined the session
+  const [hasJoined, setHasJoined] = useState(false);
+
+  // useEffect hook remains the same
+
+  const inputStyle = "my-2 mx-auto p-2 w-full max-w-xs text-gray-700 bg-gray-50 rounded border border-gray-300 focus:outline-none focus:border-gray-500";
+  const buttonStyle = "mx-auto my-2 px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg shadow hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75";
 
 
   useEffect(() => {
@@ -91,30 +97,47 @@ const Player = () => {
   };
 
   return (
-    <div>
-      <h2>Player Join</h2>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="flex flex-col items-center justify-center min-h-screen bg-cream-100"
+    >
+      <h2 className="text-2xl font-bold text-gray-700">Player Join</h2>
       {!hasJoined ? (
         <>
-          <input type="text" placeholder="Session ID" value={sessionId} onChange={e => setSessionId(e.target.value)} />
-          <input type="text" placeholder="Your Name" value={name} onChange={e => setName(e.target.value)} />
-          <button onClick={joinSession}>Join Game</button>
+          <input
+            type="text"
+            placeholder="Session ID"
+            value={sessionId}
+            onChange={e => setSessionId(e.target.value)}
+            className={inputStyle}
+          />
+          <input
+            type="text"
+            placeholder="Your Name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className={inputStyle}
+          />
+          <button onClick={joinSession} className={buttonStyle}>Join Game</button>
         </>
       ) : (
         <>
-          <h3>Welcome, {name}!</h3>
-          <button onClick={buzzIn}>Buzz</button>
+          <h3 className="text-xl font-semibold">Welcome, {name}!</h3>
+          <button onClick={buzzIn} className={buttonStyle}>Buzz</button>
           {currentQuestion && (
-            <div>
-              <h4>Current Question:</h4>
-              <p>{currentQuestion.question}</p>
+            <div className="mt-4 p-4 bg-blue-100 rounded-lg shadow-lg">
+              <h4 className="text-lg font-bold">Current Question:</h4>
+              <p className="text-xl font-semibold text-blue-800">{currentQuestion.question}</p>
               <p>Timer: {timer}</p> {/* Display the timer */}
             </div>
           )}
-          <p>Your Score: {score}</p> {/* Display the player's score */}
+          <p>Your Score: {score}</p>
           <Leaderboard sessionId={sessionId} />
         </>
       )}
-    </div>
+    </motion.div>
   );
 };
 

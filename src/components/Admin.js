@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import Papa from 'papaparse';
 import Leaderboard from './Leaderboard';
-
+import { motion } from 'framer-motion';
 
 const socket = io('http://localhost:3001'); // Ensure this matches your server URL
 
@@ -14,6 +14,11 @@ const Admin = () => {
     const [buzzedPlayer, setBuzzedPlayer] = useState('');
     const [isGamePaused, setIsGamePaused] = useState(false);
     const [timer, setTimer] = useState(10); // Initialize with 10 seconds for the countdown
+    const [gamePhase, setGamePhase] = useState('beforeStart'); // New state to manage game phases
+
+    // Add your useEffect hook here as before
+
+    const buttonStyle = "mx-2 my-1 px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75";
 
 
     useEffect(() => {
@@ -108,6 +113,7 @@ socket.on('gameOver', () => {
     const startGame = () => {
         console.log(`Starting game for session ${sessionId}`);
         socket.emit('startGame', { sessionId });
+        setGamePhase('duringGame'); // Change game phase to duringGame
     };
 
     const nextQuestion = () => {
@@ -131,47 +137,61 @@ socket.on('gameOver', () => {
 
 
     return (
-        <div>
-            <h2>Admin Panel</h2>
-            {sessionId ? (
-                <>
-                    <p>Session ID: {sessionId}</p>
-                    <input type="file" onChange={handleFileChange} />
-                    <button onClick={uploadQuestions}>Upload Questions</button>
-                    <button onClick={startGame}>Start Game</button>
-                    <button onClick={nextQuestion}>Next Question</button>
-                    <button onClick={pauseGame}>Pause Game</button>
-                    <button onClick={closeGame}>Close Game</button>
-                    {currentQuestion && (
-                        <div>
-                            <h3>Current Question:</h3>
-                            <p>Question: {currentQuestion.question}</p>
-                            <p>Answer: {currentQuestion.solution} </p> {/* Display the answer */}
-                            <p>Time left: {timer} seconds</p>
-                        </div>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="min-h-screen bg-cream-100 flex flex-col items-center justify-center"
+        >
+            <h2 className="text-2xl font-bold text-gray-700">Admin Panel</h2>
+            {sessionId && (
+                <div className="space-y-4 mt-5">
+                    <p className="text-xl font-bold">Session ID: <span className="text-lg text-green-600">{sessionId}</span></p>
+                    {gamePhase === 'beforeStart' && (
+                        <>
+                            <input type="file" onChange={handleFileChange} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
+                            <div className="flex flex-wrap justify-center">
+                                <button onClick={uploadQuestions} className={buttonStyle}>Upload Questions</button>
+                                <button onClick={startGame} className={buttonStyle}>Start Game</button>
+                            </div>
+                        </>
                     )}
+                    {gamePhase === 'duringGame' && (
+                        <>
+                            <button onClick={nextQuestion} className={buttonStyle}>Next Question</button>
+                            <button onClick={pauseGame} className={buttonStyle}>Pause Game</button>
+                            <button onClick={closeGame} className={buttonStyle}>Close Game</button>
+                            {currentQuestion && (
+    <div className="text-center p-4 bg-blue-100 rounded-lg shadow">
+        <h3 className="text-xl font-semibold">Current Question:</h3>
+        <p className="text-lg">{currentQuestion.question}</p>
+        <p>Time left: {timer} seconds</p>
+    </div>
+        )}
+        {buzzedPlayer && (
+            <div className="mt-4 p-4 bg-yellow-100 rounded-lg shadow">
+                <p className="text-lg">{buzzedPlayer} buzzed in. Decide:</p>
+                <button onClick={() => handleAdminDecision('correct')} className={buttonStyle + " bg-green-500 hover:bg-green-600"}>Correct</button>
+                <button onClick={() => handleAdminDecision('incorrect')} className={buttonStyle + " bg-red-500 hover:bg-red-600"}>Incorrect</button>
+            </div>
+        )}
+        {isGamePaused && (
+            <div className="mt-4 p-4 bg-orange-100 rounded-lg shadow">
+                <p className="text-lg">{buzzedPlayer} buzzed in. Award points?</p>
+                <button onClick={() => awardPoints(1)} className={buttonStyle + " bg-green-500 hover:bg-green-600"}>Yes</button>
+                <button onClick={() => awardPoints(0)} className={buttonStyle + " bg-red-500 hover:bg-red-600"}>No</button>
+            </div>
+        )}
 
-                    {buzzedPlayer && (
-                        <div>
-                            <p>{buzzedPlayer} buzzed in. Decide:</p>
-                            <button onClick={() => handleAdminDecision('correct')}>Correct</button>
-                            <button onClick={() => handleAdminDecision('incorrect')}>Incorrect</button>
-                        </div>
+                        </>
                     )}
-                    {isGamePaused && (
-                        <div>
-                            <p>{buzzedPlayer} buzzed in. Award points?</p>
-                            <button onClick={() => awardPoints(1)}>Yes</button>
-                            <button onClick={() => awardPoints(0)}>No</button>
-                            <Leaderboard sessionId={sessionId} />
-                        </div>
-                    )}
-                </>
-            ) : (
-                <button onClick={createSession}>Create Game Session</button>
+                </div>
             )}
-        </div>
-    );    
+            {!sessionId && (
+                <button onClick={createSession} className={buttonStyle}>Create Game Session</button>
+            )}
+        </motion.div>
+    );
 };
 
 export default Admin;
