@@ -15,6 +15,10 @@ const Admin = () => {
     const [isGamePaused, setIsGamePaused] = useState(false);
     const [timer, setTimer] = useState(10); // Initialize with 10 seconds for the countdown
     const [gamePhase, setGamePhase] = useState('beforeStart'); // New state to manage game phases
+    const [playerList, setPlayerList] = useState([]);
+    const [scores, setScores] = useState([]);
+    const [leaderboardPlayers, setLeaderboardPlayers] = useState([]);
+
 
     // Add your useEffect hook here as before
 
@@ -27,11 +31,19 @@ const Admin = () => {
             setSessionId(sessionId);
         });
 
+        socket.on('updateLeaderboard', (updatedLeaderboard) => {
+            console.log('Leaderboard updated:', updatedLeaderboard);
+            setLeaderboardPlayers(updatedLeaderboard);
+        });
+        
         socket.on('gamePaused', ({ playerName }) => {
             setBuzzedPlayer(playerName);
             setIsGamePaused(true);
         });
 
+        socket.on('updateScores', (updatedScores) => {
+            setScores(updatedScores);
+          });
 
         socket.on('buzzed', ({ playerName, sessionId }) => {
             console.log(`${playerName} buzzed in session ${sessionId}`);
@@ -70,6 +82,7 @@ socket.on('gameOver', () => {
             socket.off('buzzed');
             socket.off('timesUp');
             socket.off('gameOver'); // Ensure to clean up this listener as well
+            socket.off('updateLeaderboard');
         };
     }, []);
 
@@ -130,7 +143,7 @@ socket.on('gameOver', () => {
     const pauseGame = () => {
         socket.emit('pauseGame', { sessionId });
     };
-    
+   
     const closeGame = () => {
         socket.emit('closeGame', { sessionId });
     };
@@ -166,7 +179,13 @@ socket.on('gameOver', () => {
         <h3 className="text-xl font-semibold">Current Question:</h3>
         <p className="text-lg">{currentQuestion.question}</p>
         <p>Time left: {timer} seconds</p>
-    </div>
+        <Leaderboard players={leaderboardPlayers} />
+        <ul>
+            {playerList.map((player, index) => (
+            <li key={index}>{player}</li>
+            ))}
+        </ul>
+      </div>
         )}
         {buzzedPlayer && (
             <div className="mt-4 p-4 bg-yellow-100 rounded-lg shadow">

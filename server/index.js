@@ -59,10 +59,11 @@ socket.on('awardPoints', ({ sessionId, points }) => {
         const player = session.players.find(p => p.id === session.buzzedPlayer.id);
         if (player) {
             player.score += points;
-            // Emit an updated players list to all clients in the session
-            io.to(sessionId).emit('updateLeaderboard', sessions[sessionId].players);
-            io.to(sessionId).emit('scoreUpdate', { playerName: player.name, score: player.score });
             console.log(`Score updated for ${player.name} to ${player.score} in session ${sessionId}`);
+
+            // Emit updated scores to all clients
+            io.to(sessionId).emit('updateLeaderboard', session.players);
+
             // Reset buzzedPlayer after awarding points
             session.buzzedPlayer = null;
         } else {
@@ -72,6 +73,9 @@ socket.on('awardPoints', ({ sessionId, points }) => {
         console.log(`Session ${sessionId} not found or no player buzzed`);
     }
 });
+
+
+
 
 socket.on('pauseGame', ({ sessionId }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
@@ -106,7 +110,7 @@ socket.on('uploadQuestions', ({ sessionId, questions }) => {
     }
 });
 
-socket.on('nextQuestion', ({ sessionId }) => {
+socket.on('nextQuestion', ({ sessionId }) => {  
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
         sessions[sessionId].currentQuestionIndex += 1;
         if (sessions[sessionId].currentQuestionIndex < sessions[sessionId].questions.length) {
@@ -183,7 +187,7 @@ socket.on('score', ({ sessionId, playerId, score }) => {
     // Implement scoring logic based on your game's requirements
     console.log(`Player ${playerId} scored ${score} in session ${sessionId}`);
     // Example: Emitting an update to all clients
-    io.to(sessionId).emit('scoreUpdate', { playerId, score });
+    io.to(sessionId).emit('scoreUpdate', { playerName: player.name, score: player.score });
     setScore(score); // Correctly updates score
 });
 

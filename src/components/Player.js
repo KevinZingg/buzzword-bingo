@@ -82,6 +82,7 @@ const Player = () => {
       clearInterval(countdown);
       socket.off('timesUp');
       socket.off('joinSuccess'); // Cleanup listener
+      socket.off('updatePlayerList');
     };
   }, [sessionId, name, socket]); // Include name in dependencies
 
@@ -134,7 +135,6 @@ const Player = () => {
             </div>
           )}
           <p>Your Score: {score}</p>
-          <Leaderboard sessionId={sessionId} />
         </>
       )}
     </motion.div>
