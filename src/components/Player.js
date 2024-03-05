@@ -45,10 +45,11 @@ const Player = () => {
     });
 
     socket.on('question', ({ question }) => {
-        console.log(`Received question for session ${sessionId}:`, question);
-        setCurrentQuestion(question);
-        setTimer(10); // Reset timer to 10 seconds for each question
+      setCurrentQuestion(question); // Assuming question is the text of the question
+      setTimer(10); // Reset timer
     });
+    
+  
 
     socket.on('scoreUpdate', ({ playerName, score }) => {
         if (playerName === name) {
@@ -133,15 +134,17 @@ const Player = () => {
         </>
       ) : (
         <>
-          <h3 className="text-xl font-semibold">Welcome, {name}!</h3>
-          <button onClick={buzzIn} className={buttonStyle}>Buzz</button>
-          {currentQuestion && (
-            <div className="mt-4 p-4 bg-blue-100 rounded-lg shadow-lg">
-              <h4 className="text-lg font-bold">Current Question:</h4>
-              <p className="text-xl font-semibold text-blue-800">{currentQuestion.question}</p>
-              <p>Timer: {timer}</p> {/* Display the timer */}
-            </div>
-          )}
+<h3 className="text-xl font-semibold">Welcome, {name}!</h3>
+<button onClick={buzzIn} className={buttonStyle}>Buzz</button>
+{currentQuestion && (
+  <div className="mt-4 p-4 bg-blue-100 rounded-lg shadow-lg">
+    <h4 className="text-lg font-bold">Current Question:</h4>
+    <p className="text-lg">{currentQuestion || "Waiting for question..."}</p>
+    <p>Timer: {timer}</p>
+  </div>
+)}
+
+
         <Leaderboard players={leaderboardPlayers} />
         </>
       )}

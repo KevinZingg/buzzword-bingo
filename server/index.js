@@ -97,18 +97,20 @@ socket.on('closeGame', ({ sessionId }) => {
 
 socket.on('uploadQuestions', ({ sessionId, questions }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
-        // Assuming each question is an object with question, solution, created_at
-        sessions[sessionId].questions = questions.map(q => ({
+        // Shuffle the questions array
+        const shuffledQuestions = shuffleArray(questions.map(q => ({
             question: q.question,
             solution: q.solution,
             // Optionally convert created_at to a JavaScript Date object
             // created_at: new Date(q.created_at)
-        }));
+        })));
+        sessions[sessionId].questions = shuffledQuestions;
         console.log(`Questions uploaded for session ${sessionId}`);
     } else {
         socket.emit('error', `Failed to upload questions for session ${sessionId}`);
     }
 });
+
 
 socket.on('nextQuestion', ({ sessionId }) => {  
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
@@ -116,14 +118,21 @@ socket.on('nextQuestion', ({ sessionId }) => {
         if (sessions[sessionId].currentQuestionIndex < sessions[sessionId].questions.length) {
             const currentQuestion = sessions[sessionId].questions[sessions[sessionId].currentQuestionIndex];
             console.log(`Moving to next question in session ${sessionId}`);
-            io.to(sessionId).emit('question', { question: currentQuestion, sessionId });
+
+            // Emit the question and solution to the session, possibly for the admin
+            io.to(sessionId).emit('question', { question: currentQuestion.question, solution: currentQuestion.solution, sessionId });
+
+            // If you want to emit a different format for players, ensure it's structured correctly
+            // For example, to send only the question text to players, adjust the logic accordingly
+            // This assumes your client logic differentiates based on the message content or structure
+
+            // Remove the incorrect emit to avoid confusion and ensure the client-side logic correctly handles the received data
+
             // Start a 10-second timer
-            clearTimeout(sessions[sessionId].questionTimeout); // Clear any existing timer
+            clearTimeout(sessions[sessionId].questionTimeout);
             sessions[sessionId].questionTimeout = setTimeout(() => {
                 console.log(`Time's up for question in session ${sessionId}`);
                 io.to(sessionId).emit('timesUp', sessionId);
-                // Here you can define what happens when time is up, for example:
-                // Move to the next question or emit an event to notify players
             }, 10000); // 10 seconds
         } else {
             console.log(`Game over in session ${sessionId}`);
@@ -134,6 +143,8 @@ socket.on('nextQuestion', ({ sessionId }) => {
 
 
 
+
+
 socket.on('startGame', ({ sessionId }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
         console.log(`Game starting in session ${sessionId}`);
@@ -141,7 +152,7 @@ socket.on('startGame', ({ sessionId }) => {
         sessions[sessionId].currentQuestionIndex = 0; // Make sure this is correctly initialized
         if (sessions[sessionId].questions && sessions[sessionId].questions.length > 0) {
             const currentQuestion = sessions[sessionId].questions[sessions[sessionId].currentQuestionIndex];
-            io.to(sessionId).emit('question', { question: currentQuestion, sessionId });
+            io.to(sessionId).emit('question', { question: currentQuestion.question, solution: currentQuestion.solution, sessionId });
         } else {
             console.log(`No questions available in session ${sessionId}`);
         }
@@ -216,3 +227,12 @@ server.listen(PORT, () => {
 function generateSessionId() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+  

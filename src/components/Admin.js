@@ -11,6 +11,7 @@ const Admin = () => {
     const [sessionId, setSessionId] = useState('');
     const [questions, setQuestions] = useState([]);
     const [currentQuestion, setCurrentQuestion] = useState(null);
+    const [currentSolution, setCurrentSolution] = useState("");
     const [buzzedPlayer, setBuzzedPlayer] = useState('');
     const [isGamePaused, setIsGamePaused] = useState(false);
     const [timer, setTimer] = useState(10); // Initialize with 10 seconds for the countdown
@@ -53,14 +54,15 @@ const Admin = () => {
 
     // Listen for a new question to start the timer
 // Inside the useEffect hook, adjust the 'question' event listener
-socket.on('question', ({ question }) => {
-    setCurrentQuestion(question); // Assuming the question object includes the question text and answer
+socket.on('question', ({ question, solution }) => {
+    setCurrentQuestion({ text: question, solution }); // Store both question and solution
     setTimer(10); // Reset timer to 10 seconds
     const interval = setInterval(() => {
         setTimer((prevTimer) => prevTimer > 0 ? prevTimer - 1 : 0);
     }, 1000);
     setTimeout(() => clearInterval(interval), 10000); // Clear interval after 10 seconds
 });
+
 
 
 socket.on('gameOver', () => {
@@ -117,11 +119,12 @@ socket.on('gameOver', () => {
     };
 
     const awardPoints = (points) => {
+        // This awards points to the buzzed player based on the admin's decision
         socket.emit('awardPoints', { sessionId, playerName: buzzedPlayer, points });
         setIsGamePaused(false);
         setBuzzedPlayer('');
         // Optionally move to the next question automatically or wait for admin action
-    };
+      };
 
     const startGame = () => {
         console.log(`Starting game for session ${sessionId}`);
@@ -136,9 +139,10 @@ socket.on('gameOver', () => {
 
     // Inside Admin component
     const handleAdminDecision = (decision) => {
+        // This emits an event based on the admin's decision about correctness
         socket.emit('adminDecision', { sessionId, decision });
         setBuzzedPlayer(''); // Reset after decision
-    };
+      };
 
     const pauseGame = () => {
         socket.emit('pauseGame', { sessionId });
@@ -175,18 +179,16 @@ socket.on('gameOver', () => {
                             <button onClick={pauseGame} className={buttonStyle}>Pause Game</button>
                             <button onClick={closeGame} className={buttonStyle}>Close Game</button>
                             {currentQuestion && (
-    <div className="text-center p-4 bg-blue-100 rounded-lg shadow">
-        <h3 className="text-xl font-semibold">Current Question:</h3>
-        <p className="text-lg">{currentQuestion.question}</p>
-        <p>Time left: {timer} seconds</p>
-        <Leaderboard players={leaderboardPlayers} />
-        <ul>
-            {playerList.map((player, index) => (
-            <li key={index}>{player}</li>
-            ))}
-        </ul>
-      </div>
-        )}
+                                <div className="text-center p-4 bg-blue-100 rounded-lg shadow">
+                                    <h3 className="text-xl font-semibold">Current Question:</h3>
+                                    <p className="text-lg">{currentQuestion.text || "Waiting for question..."}</p>
+                                    <h4 className="text-xl font-semibold">Answer:</h4>
+                                    <p className="text-lg">{currentQuestion.solution || "Waiting for solution..."}</p>
+                                    <p>Time left: {timer} seconds</p>
+                                    <Leaderboard players={leaderboardPlayers} />
+                                </div>
+                            )}
+
         {buzzedPlayer && (
             <div className="mt-4 p-4 bg-yellow-100 rounded-lg shadow">
                 <p className="text-lg">{buzzedPlayer} buzzed in. Decide:</p>
