@@ -13,6 +13,9 @@ const Player = () => {
   const [score, setScore] = useState(0);
   const [timer, setTimer] = useState(0);
   const [hasJoined, setHasJoined] = useState(false);
+  const [playerList, setPlayerList] = useState([]);
+  const [scores, setScores] = useState([]);
+  const [leaderboardPlayers, setLeaderboardPlayers] = useState([]);
 
   // useEffect hook remains the same
 
@@ -25,6 +28,10 @@ const Player = () => {
       console.log(`${playerName} has joined the session ${sessionId}`);
     });
 
+    socket.on('updateLeaderboard', (updatedLeaderboard) => {
+      console.log('Leaderboard updated:', updatedLeaderboard);
+      setLeaderboardPlayers(updatedLeaderboard);
+  });
     socket.on('joinSuccess', () => {
       setHasJoined(true); // Update join status upon successful join
     });
@@ -83,6 +90,7 @@ const Player = () => {
       socket.off('timesUp');
       socket.off('joinSuccess'); // Cleanup listener
       socket.off('updatePlayerList');
+      socket.off('updateLeaderboard');
     };
   }, [sessionId, name, socket]); // Include name in dependencies
 
@@ -134,7 +142,7 @@ const Player = () => {
               <p>Timer: {timer}</p> {/* Display the timer */}
             </div>
           )}
-          <p>Your Score: {score}</p>
+        <Leaderboard players={leaderboardPlayers} />
         </>
       )}
     </motion.div>
