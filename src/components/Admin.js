@@ -5,7 +5,7 @@ import Papa from 'papaparse';
 import Leaderboard from './Leaderboard';
 import { motion } from 'framer-motion';
 
-const socket = io('http://localhost:3001'); // Ensure this matches your server URL
+const socket = io('http://192.168.1.109:3001'); // Ensure this matches your server URL
 
 const Admin = () => {
     const [sessionId, setSessionId] = useState('');
@@ -180,6 +180,25 @@ const handleAdminDecision = (decision, points = 0) => {
         socket.emit('closeGame', { sessionId });
     };
 
+    // Toggling pause and resume with the same button
+const togglePauseResumeGame = () => {
+    if (isGamePaused) {
+        // Resume game logic
+        socket.emit('resumeGame', { sessionId });
+        setIsGamePaused(false); // Update the local paused state to false
+    } else {
+        // Pause game logic
+        socket.emit('pauseGame', { sessionId });
+        setIsGamePaused(true); // Update the local paused state to true
+    }
+};
+
+// Adjusting the pause/resume button in the render section
+<button onClick={togglePauseResumeGame} className={buttonStyle}>
+    {isGamePaused ? "Resume Game" : "Pause Game"}
+</button>
+
+
     const togglePauseGame = () => {
         if (isGamePaused) {
             // Game is currently paused, so resume it
@@ -217,9 +236,9 @@ const handleAdminDecision = (decision, points = 0) => {
                     {gamePhase === 'duringGame' && (
                         <>
                             <button onClick={nextQuestion} className={buttonStyle}>Next Question</button>
-                            <button onClick={togglePauseGame} className={buttonStyle}>
-                                {isGamePaused ? 'Resume Game' : 'Pause Game'}
-                            </button>                            <button onClick={closeGame} className={buttonStyle}>Close Game</button>
+                            <button onClick={togglePauseResumeGame} className={buttonStyle}>
+                                {isGamePaused ? "Resume Game" : "Pause Game"}
+                            </button>                           <button onClick={closeGame} className={buttonStyle}>Close Game</button>
                             {currentQuestion && (
                                 <div className="text-center p-4 bg-blue-100 rounded-lg shadow">
                                     <h3 className="text-xl font-semibold">Current Question:</h3>

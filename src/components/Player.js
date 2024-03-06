@@ -4,7 +4,7 @@ import io from 'socket.io-client';
 import Leaderboard from './Leaderboard';
 import { motion } from 'framer-motion';
 
-const socket = io('http://localhost:3001');
+const socket = io('http://192.168.1.109:3001');
 
 const Player = () => {
   const [sessionId, setSessionId] = useState('');
@@ -25,6 +25,15 @@ const Player = () => {
 
 
   useEffect(() => {
+    let interval;
+
+    if (!isGamePaused && currentQuestion) {
+      // Assuming you only want the timer to run when the game is active and a question is set
+      interval = setInterval(() => {
+          setTimer((prevTimer) => prevTimer > 0 ? prevTimer - 1 : 0);
+      }, 1000);
+  }
+
     socket.on('playerJoined', ({ playerName, sessionId }) => {
       console.log(`${playerName} has joined the session ${sessionId}`);
     });
@@ -60,7 +69,7 @@ const Player = () => {
 
     socket.on('gamePaused', ({ playerName }) => {
       setIsGamePaused(true);
-      // Optionally show who buzzed if playerName is available
+      clearInterval(interval);
     });
   
 
@@ -91,10 +100,11 @@ const Player = () => {
       socket.off('joinSuccess'); // Cleanup listener
       socket.off('updatePlayerList');
       socket.off('updateLeaderboard');
+      clearInterval(interval);
       socket.off('gamePaused');
       socket.off('gameResumed');
     };
-  }, [sessionId, name, socket]); // Include name in dependencies
+  }, [isGamePaused, currentQuestion, sessionId, name, socket]); // Include name in dependencies
 
   const joinSession = () => {
     console.log(`${name} attempting to join session ${sessionId}`);
@@ -110,6 +120,7 @@ const Player = () => {
   socket.on('gameResumed', () => {
     setIsGamePaused(false);
   });
+
 
 
   return (
