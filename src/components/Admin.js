@@ -180,6 +180,19 @@ const handleAdminDecision = (decision, points = 0) => {
         socket.emit('closeGame', { sessionId });
     };
 
+    const togglePauseGame = () => {
+        if (isGamePaused) {
+            // Game is currently paused, so resume it
+            socket.emit('resumeGame', { sessionId });
+            setIsGamePaused(false); // Update local state to reflect that the game is resumed
+        } else {
+            // Game is currently active, so pause it
+            socket.emit('pauseGame', { sessionId });
+            setIsGamePaused(true); // Update local state to reflect that the game is paused
+        }
+    };
+    
+
 
     return (
         <motion.div
@@ -204,8 +217,9 @@ const handleAdminDecision = (decision, points = 0) => {
                     {gamePhase === 'duringGame' && (
                         <>
                             <button onClick={nextQuestion} className={buttonStyle}>Next Question</button>
-                            <button onClick={pauseGame} className={buttonStyle}>Pause Game</button>
-                            <button onClick={closeGame} className={buttonStyle}>Close Game</button>
+                            <button onClick={togglePauseGame} className={buttonStyle}>
+                                {isGamePaused ? 'Resume Game' : 'Pause Game'}
+                            </button>                            <button onClick={closeGame} className={buttonStyle}>Close Game</button>
                             {currentQuestion && (
                                 <div className="text-center p-4 bg-blue-100 rounded-lg shadow">
                                     <h3 className="text-xl font-semibold">Current Question:</h3>

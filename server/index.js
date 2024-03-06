@@ -86,10 +86,11 @@ socket.on('pauseGame', ({ sessionId }) => {
 
   socket.on('resumeGame', ({ sessionId }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
-      sessions[sessionId].state = 'active';
-      io.to(sessionId).emit('gameResumed');
+        sessions[sessionId].state = 'active';
+        io.to(sessionId).emit('gameResumed'); // Inform clients the game is resumed
+        console.log(`Game resumed in session ${sessionId}`);
     }
-  });
+});
 
 
 socket.on('closeGame', ({ sessionId }) => {
