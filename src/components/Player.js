@@ -4,7 +4,7 @@ import io from 'socket.io-client';
 import Leaderboard from './Leaderboard';
 import { motion } from 'framer-motion';
 
-const socket = io('http://192.168.1.109:3001');
+const socket = io('http://localhost:3001');
 
 const Player = () => {
   const [sessionId, setSessionId] = useState('');
@@ -58,9 +58,11 @@ const Player = () => {
         }
     });
 
-    socket.on('gamePaused', () => {
+    socket.on('gamePaused', ({ playerName }) => {
       setIsGamePaused(true);
-  });
+      // Optionally show who buzzed if playerName is available
+    });
+  
 
     const countdown = setInterval(() => {
       setTimer((prevTimer) => prevTimer > 0 ? prevTimer - 1 : prevTimer);
@@ -90,6 +92,7 @@ const Player = () => {
       socket.off('updatePlayerList');
       socket.off('updateLeaderboard');
       socket.off('gamePaused');
+      socket.off('gameResumed');
     };
   }, [sessionId, name, socket]); // Include name in dependencies
 
@@ -105,8 +108,8 @@ const Player = () => {
   };
 
   socket.on('gameResumed', () => {
-    setIsGamePaused(false); // Hide the pause overlay
-});
+    setIsGamePaused(false);
+  });
 
 
   return (

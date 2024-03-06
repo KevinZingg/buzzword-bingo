@@ -79,19 +79,17 @@ socket.on('awardPoints', ({ sessionId, points }) => {
 
 socket.on('pauseGame', ({ sessionId }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
-        sessions[sessionId].state = 'paused';
-        io.to(sessionId).emit('gamePaused'); // This line broadcasts the pause event to all clients in the session
-        console.log(`Game paused in session ${sessionId}`);
+      sessions[sessionId].state = 'paused';
+      io.to(sessionId).emit('gamePaused', {});
     }
-});
+  });
 
-socket.on('resumeGame', ({ sessionId }) => {
+  socket.on('resumeGame', ({ sessionId }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
-        sessions[sessionId].state = 'active'; // Mark the game as active again
-        io.to(sessionId).emit('gameResumed'); // Notify all clients
-        console.log(`Game resumed in session ${sessionId}`);
+      sessions[sessionId].state = 'active';
+      io.to(sessionId).emit('gameResumed');
     }
-});
+  });
 
 
 socket.on('closeGame', ({ sessionId }) => {
@@ -176,7 +174,7 @@ socket.on('buzz', ({ sessionId, playerName }) => {
         session.state = 'paused';
         session.buzzedPlayer = { name: playerName, id: socket.id };
         console.log(`${playerName} buzzed in session ${sessionId}`);
-        io.to(sessionId).emit('gamePaused', { playerName, sessionId });
+        io.to(sessionId).emit('gamePaused', { playerName: sessions[sessionId].buzzedPlayer.name });
     }
 });
 

@@ -5,7 +5,7 @@ import Papa from 'papaparse';
 import Leaderboard from './Leaderboard';
 import { motion } from 'framer-motion';
 
-const socket = io('http://192.168.1.109:3001'); // Ensure this matches your server URL
+const socket = io('http://localhost:3001'); // Ensure this matches your server URL
 
 const Admin = () => {
     const [sessionId, setSessionId] = useState('');
@@ -37,9 +37,15 @@ const Admin = () => {
             setLeaderboardPlayers(updatedLeaderboard);
         });
         
-        socket.on('gamePaused', () => {
-            setIsGamePaused(true);
+        socket.on('gamePaused', ({ playerName }) => {
+            // This condition is important to differentiate between manual game pause and buzz events.
+            if (playerName) {
+                console.log(`${playerName} has buzzed in. Waiting for the admin to award points.`);
+                setBuzzedPlayer(playerName);
+                setIsGamePaused(true); // Only pause if a player has buzzed in
+            }
         });
+        
         
 
         socket.on('updateScores', (updatedScores) => {
@@ -213,7 +219,7 @@ const handleAdminDecision = (decision, points = 0) => {
 
 {buzzedPlayer && (
     <div className={`mt-4 p-4 ${isGamePaused ? 'bg-orange-100' : 'bg-yellow-100'} rounded-lg shadow`}>
-        <p className="text-lg">{buzzedPlayer} buzzed in. {isGamePaused ? 'Award points?' : 'Decide:'}</p>
+        <p className="text-lg">{buzzedPlayer} buzzed in. Decide on points:</p>
         <button onClick={() => handleAdminDecision('correct')} className={buttonStyle + " bg-green-500 hover:bg-green-600"}>
             Correct
         </button>
@@ -222,6 +228,7 @@ const handleAdminDecision = (decision, points = 0) => {
         </button>
     </div>
 )}
+
 
                         </>
                     )}
