@@ -4,7 +4,7 @@ import io from 'socket.io-client';
 import Leaderboard from './Leaderboard';
 import { motion } from 'framer-motion';
 
-const socket = io('http://localhost:3001');
+const socket = io('http://192.168.1.109:3001');
 
 const Player = () => {
   const [sessionId, setSessionId] = useState('');
@@ -16,6 +16,7 @@ const Player = () => {
   const [playerList, setPlayerList] = useState([]);
   const [scores, setScores] = useState([]);
   const [leaderboardPlayers, setLeaderboardPlayers] = useState([]);
+  const [isGamePaused, setIsGamePaused] = useState(false);
 
   // useEffect hook remains the same
 
@@ -57,13 +58,9 @@ const Player = () => {
         }
     });
 
-    socket.on('gamePaused', ({ playerName }) => {
-        if (playerName === name) {
-            console.log("You've buzzed in. Waiting for the admin to award points.");
-        } else {
-            console.log(`Game paused because ${playerName} buzzed in.`);
-        }
-    });
+    socket.on('gamePaused', () => {
+      setIsGamePaused(true);
+  });
 
     const countdown = setInterval(() => {
       setTimer((prevTimer) => prevTimer > 0 ? prevTimer - 1 : prevTimer);
@@ -92,6 +89,7 @@ const Player = () => {
       socket.off('joinSuccess'); // Cleanup listener
       socket.off('updatePlayerList');
       socket.off('updateLeaderboard');
+      socket.off('gamePaused');
     };
   }, [sessionId, name, socket]); // Include name in dependencies
 
@@ -105,6 +103,11 @@ const Player = () => {
     console.log(`${name} buzzed in session ${sessionId}`);
     socket.emit('buzz', { sessionId, playerName: name });
   };
+
+  socket.on('gameResumed', () => {
+    setIsGamePaused(false); // Hide the pause overlay
+});
+
 
   return (
     <motion.div
@@ -144,7 +147,11 @@ const Player = () => {
   </div>
 )}
 
-
+{isGamePaused && (
+        <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center z-10">
+          <p className="text-white text-xl font-bold">Game Paused...</p>
+        </div>
+      )}
         <Leaderboard players={leaderboardPlayers} />
         </>
       )}

@@ -80,10 +80,19 @@ socket.on('awardPoints', ({ sessionId, points }) => {
 socket.on('pauseGame', ({ sessionId }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
         sessions[sessionId].state = 'paused';
-        io.to(sessionId).emit('gamePaused');
+        io.to(sessionId).emit('gamePaused'); // This line broadcasts the pause event to all clients in the session
         console.log(`Game paused in session ${sessionId}`);
     }
 });
+
+socket.on('resumeGame', ({ sessionId }) => {
+    if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
+        sessions[sessionId].state = 'active'; // Mark the game as active again
+        io.to(sessionId).emit('gameResumed'); // Notify all clients
+        console.log(`Game resumed in session ${sessionId}`);
+    }
+});
+
 
 socket.on('closeGame', ({ sessionId }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {

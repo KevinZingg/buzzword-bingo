@@ -5,7 +5,7 @@ import Papa from 'papaparse';
 import Leaderboard from './Leaderboard';
 import { motion } from 'framer-motion';
 
-const socket = io('http://localhost:3001'); // Ensure this matches your server URL
+const socket = io('http://192.168.1.109:3001'); // Ensure this matches your server URL
 
 const Admin = () => {
     const [sessionId, setSessionId] = useState('');
@@ -37,10 +37,10 @@ const Admin = () => {
             setLeaderboardPlayers(updatedLeaderboard);
         });
         
-        socket.on('gamePaused', ({ playerName }) => {
-            setBuzzedPlayer(playerName);
+        socket.on('gamePaused', () => {
             setIsGamePaused(true);
         });
+        
 
         socket.on('updateScores', (updatedScores) => {
             setScores(updatedScores);
@@ -131,6 +131,11 @@ socket.on('gameOver', () => {
         console.log(`Starting game for session ${sessionId}`);
         socket.emit('startGame', { sessionId });
         setGamePhase('duringGame'); // Change game phase to duringGame
+    };
+
+    const resumeGame = () => {
+        socket.emit('resumeGame', { sessionId });
+        setIsGamePaused(false); // Update local state to reflect that the game is no longer paused
     };
 
     const nextQuestion = () => {
