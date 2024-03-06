@@ -119,12 +119,13 @@ socket.on('gameOver', () => {
     };
 
     const awardPoints = (points) => {
-        // This awards points to the buzzed player based on the admin's decision
         socket.emit('awardPoints', { sessionId, playerName: buzzedPlayer, points });
-        setIsGamePaused(false);
-        setBuzzedPlayer('');
-        // Optionally move to the next question automatically or wait for admin action
-      };
+        setIsGamePaused(false); // Make sure the game is no longer paused
+        setBuzzedPlayer(''); // Clear the buzzed player
+    
+        // Notify all clients that the game can continue, and they can buzz for the next question
+        socket.emit('adminDecision', { sessionId, decision: 'nextQuestion' });
+    };
 
     const startGame = () => {
         console.log(`Starting game for session ${sessionId}`);
@@ -137,12 +138,28 @@ socket.on('gameOver', () => {
         socket.emit('nextQuestion', { sessionId });
     };
 
-    // Inside Admin component
-    const handleAdminDecision = (decision) => {
-        // This emits an event based on the admin's decision about correctness
-        socket.emit('adminDecision', { sessionId, decision });
-        setBuzzedPlayer(''); // Reset after decision
-      };
+// Adjusted handleAdminDecision to manage game state properly
+const handleAdminDecision = (decision, points = 0) => {
+    // Emit the admin's decision to the server
+    socket.emit('adminDecision', { sessionId, decision });
+
+    // If the decision involves awarding points, handle it accordingly
+    if (decision === 'correct') {
+        awardPoints(1); // Assuming 1 point for a correct answer, adjust as needed
+    } else if (decision === 'incorrect') {
+        awardPoints(0); // No points for an incorrect answer
+    }
+
+    // After handling the decision, ensure the game state is reset correctly
+    setIsGamePaused(false); // Resume the game
+    setBuzzedPlayer(''); // Reset buzzed player
+
+    // Optionally, you can also move to the next question directly if needed
+    // For example, you could call a function here to emit an event to move to the next question
+    // This is just an example and may need adjustment based on your game logic
+    // nextQuestion(); // Uncomment if moving to the next question automatically
+};
+
 
     const pauseGame = () => {
         socket.emit('pauseGame', { sessionId });
@@ -189,20 +206,17 @@ socket.on('gameOver', () => {
                                 </div>
                             )}
 
-        {buzzedPlayer && (
-            <div className="mt-4 p-4 bg-yellow-100 rounded-lg shadow">
-                <p className="text-lg">{buzzedPlayer} buzzed in. Decide:</p>
-                <button onClick={() => handleAdminDecision('correct')} className={buttonStyle + " bg-green-500 hover:bg-green-600"}>Correct</button>
-                <button onClick={() => handleAdminDecision('incorrect')} className={buttonStyle + " bg-red-500 hover:bg-red-600"}>Incorrect</button>
-            </div>
-        )}
-        {isGamePaused && (
-            <div className="mt-4 p-4 bg-orange-100 rounded-lg shadow">
-                <p className="text-lg">{buzzedPlayer} buzzed in. Award points?</p>
-                <button onClick={() => awardPoints(1)} className={buttonStyle + " bg-green-500 hover:bg-green-600"}>Yes</button>
-                <button onClick={() => awardPoints(0)} className={buttonStyle + " bg-red-500 hover:bg-red-600"}>No</button>
-            </div>
-        )}
+{buzzedPlayer && (
+    <div className={`mt-4 p-4 ${isGamePaused ? 'bg-orange-100' : 'bg-yellow-100'} rounded-lg shadow`}>
+        <p className="text-lg">{buzzedPlayer} buzzed in. {isGamePaused ? 'Award points?' : 'Decide:'}</p>
+        <button onClick={() => handleAdminDecision('correct')} className={buttonStyle + " bg-green-500 hover:bg-green-600"}>
+            Correct
+        </button>
+        <button onClick={() => handleAdminDecision('incorrect')} className={buttonStyle + " bg-red-500 hover:bg-red-600"}>
+            Incorrect
+        </button>
+    </div>
+)}
 
                         </>
                     )}
