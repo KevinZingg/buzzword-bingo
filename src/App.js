@@ -5,7 +5,7 @@ import Home from './components/Home';
 import Admin from './components/Admin';
 import Player from './components/Player';
 
-const socket = io('http://192.168.1.109:3001'); // Adjust to match your server's address
+const socket = io('http://localhost:3001'); // Adjust to match your server's address
 
 function App() {
   const [role, setRole] = useState(''); // 'admin' or 'player'

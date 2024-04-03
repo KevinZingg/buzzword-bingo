@@ -5,7 +5,7 @@ import Papa from 'papaparse';
 import Leaderboard from './Leaderboard';
 import { motion } from 'framer-motion';
 
-const socket = io('http://192.168.1.109:3001'); // Ensure this matches your server URL
+const socket = io('http://localhost:3001'); // Ensure this matches your server URL. Change for live production.
 
 const Admin = () => {
     const [sessionId, setSessionId] = useState('');
