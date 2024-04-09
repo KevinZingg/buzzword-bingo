@@ -32,6 +32,11 @@ const Admin = () => {
             setSessionId(sessionId);
         });
 
+        socket.on('timerUpdate', ({ timer }) => {
+            console.log(`Debug: Received timer update, current time: ${timer}`);
+            setTimer(timer); // Update the timer based on the event data
+        });
+
         socket.on('updateLeaderboard', (updatedLeaderboard) => {
             console.log('Leaderboard updated:', updatedLeaderboard);
             setLeaderboardPlayers(updatedLeaderboard);
@@ -62,10 +67,6 @@ const Admin = () => {
 // Inside the useEffect hook, adjust the 'question' event listener
 socket.on('question', ({ question, solution }) => {
     setCurrentQuestion({ text: question, solution }); // Store both question and solution
-    setTimer(10); // Reset timer to 10 seconds
-    const interval = setInterval(() => {
-        setTimer((prevTimer) => prevTimer > 0 ? prevTimer - 1 : 0);
-    }, 1000);
 });
 
 
@@ -76,10 +77,11 @@ socket.on('gameOver', () => {
 });
 
             // Listen for the timesUp event to stop the timer
-        socket.on('timesUp', () => {
-            setTimer(0); // Reset timer
-            alert("Time has expired for the current question. Please proceed."); // Custom message for admin
-        });
+            socket.on('timesUp', () => {
+                console.log("Time's up received"); // Debug: Confirm reception
+                setTimer(0); // Ensure the timer is reset in the UI
+                alert("Time has expired for the current question. Please proceed."); // Consider replacing this with a less intrusive notification
+            });
 
         // Clean up on component unmount
         return () => {
@@ -90,6 +92,7 @@ socket.on('gameOver', () => {
             socket.off('timesUp');
             socket.off('gameOver'); // Ensure to clean up this listener as well
             socket.off('updateLeaderboard');
+            socket.off('timerUpdate');
         };
     }, []);
 

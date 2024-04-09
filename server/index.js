@@ -89,23 +89,8 @@ socket.on('resumeGame', ({ sessionId }) => {
     }
 });
 
-// Function to manage the timer
-function manageTimer(sessionId) {
-    const session = sessions[sessionId];
-    if (!session) return;
 
-    clearInterval(session.timerInterval); // Clear existing timer interval
 
-    session.timerInterval = setInterval(() => {
-        if (session.timer > 0) {
-            session.timer -= 1; // Decrement the timer
-            io.to(sessionId).emit('timerUpdate', { timer: session.timer });
-        } else {
-            clearInterval(session.timerInterval); // Stop the timer
-            io.to(sessionId).emit('timesUp', sessionId); // Notify clients that time is up
-        }
-    }, 1000); // Update every second
-}
 
 
 
@@ -242,6 +227,36 @@ const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Function to manage the timer
+// At the beginning of manageTimer function in index.js
+
+function manageTimer(sessionId) {
+    console.log(`Debug: manageTimer called for session ${sessionId}`);
+    const session = sessions[sessionId];
+    if (!session) {
+        console.log(`Debug: Session ${sessionId} not found.`);
+        return;
+    }
+
+    // Ensure the timer starts at the desired value (e.g., 10 seconds) before this function is called the first time.
+    console.log(`Initial timer value for session ${sessionId}: ${session.timer}`);
+
+    clearInterval(session.timerInterval); // Clear any existing timer interval
+
+    session.timerInterval = setInterval(() => {
+        console.log(`Interval check for session ${sessionId}, Timer: ${session.timer}`); // Debugging: Confirm this line executes
+        if (session.timer > 0) {
+            session.timer -= 1;
+            console.log(`Timer decremented for session ${sessionId}, New Timer: ${session.timer}`); // Debugging: Confirm the timer decrements
+            io.to(sessionId).emit('timerUpdate', { timer: session.timer });
+        } else {
+            clearInterval(session.timerInterval); // Stop the timer
+            console.log('Debug: Times up');
+            io.to(sessionId).emit('timesUp', sessionId);
+        }
+    }, 1000); // Update every second
+}
 
 function generateSessionId() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();

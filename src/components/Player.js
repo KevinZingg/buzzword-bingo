@@ -27,26 +27,10 @@ const Player = () => {
   useEffect(() => {
     let interval;
 
-    const handleTimer = () => {
-      if (!isGamePaused && timer > 0) {
-        // Using a single setInterval managed by the timer and pause state
-        const intervalId = setInterval(() => {
-          setTimer((prevTimer) => prevTimer - 1);
-        }, 1000);
-        return () => clearInterval(intervalId);
-      }
-    };
-
     socket.on('timerUpdate', ({ timer }) => {
-      setTimer(timer); // Update the local state with the server's timer value
+      console.log(`Debug: Received timer update, current time: ${timer}`);
+      setTimer(timer); // Update the timer based on the event data
   });
-
-    if (!isGamePaused && currentQuestion) {
-      // Assuming you only want the timer to run when the game is active and a question is set
-      interval = setInterval(() => {
-          setTimer((prevTimer) => prevTimer > 0 ? prevTimer - 1 : 0);
-      }, 1000);
-  }
 
     socket.on('playerJoined', ({ playerName, sessionId }) => {
       console.log(`${playerName} has joined the session ${sessionId}`);
