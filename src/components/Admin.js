@@ -113,18 +113,28 @@ socket.on('gameOver', () => {
 
     const uploadQuestions = () => {
         if (questions.length > 0) {
-            const formattedQuestions = questions.map(q => ({
+            // Filter out any entries where the question field is empty
+            const validQuestions = questions.filter(q => q.question.trim().length > 0);
+    
+            // Format the valid questions
+            const formattedQuestions = validQuestions.map(q => ({
                 question: q.question,
                 solution: q.solution,
                 created_at: q.created_at // Adjust as needed
             }));
-
-            socket.emit('uploadQuestions', { sessionId, questions: formattedQuestions });
-            console.log('Questions uploaded', formattedQuestions);
+    
+            // Emit only if there are valid questions
+            if (formattedQuestions.length > 0) {
+                socket.emit('uploadQuestions', { sessionId, questions: formattedQuestions });
+                console.log('Questions uploaded', formattedQuestions);
+            } else {
+                console.log('No valid questions to upload');
+            }
         } else {
             console.log('No questions to upload');
         }
     };
+    
 
     const awardPoints = (points) => {
         socket.emit('awardPoints', { sessionId, playerName: buzzedPlayer, points });
