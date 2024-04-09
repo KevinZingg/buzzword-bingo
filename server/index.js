@@ -14,6 +14,7 @@ const io = new Server(server, {
 
 let sessions = {}; // Store session data
 
+
 io.on('connection', (socket) => {
   console.log('a user connected', socket.id);
 
@@ -42,16 +43,6 @@ io.on('connection', (socket) => {
 
 // Inside io.on('connection', (socket) => { ... })
 
-socket.on('buzz', ({ sessionId, playerName }) => {
-    if (sessions[sessionId] && sessions[sessionId].state === 'active') {
-        sessions[sessionId].state = 'paused'; // Pause the game
-        // Store both playerName and socket.id of the buzzed player
-        sessions[sessionId].buzzedPlayer = { name: playerName, id: socket.id };
-        io.to(sessionId).emit('gamePaused', { playerName }); // Notify all clients in the session
-        console.log(`${playerName} buzzed in session ${sessionId}`);
-    }
-});
-
 
 socket.on('awardPoints', ({ sessionId, points }) => {
     const session = sessions[sessionId];
@@ -77,20 +68,44 @@ socket.on('awardPoints', ({ sessionId, points }) => {
 
 
 
+// When pausing the game, clear the existing timer.
 socket.on('pauseGame', ({ sessionId }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
-      sessions[sessionId].state = 'paused';
-      io.to(sessionId).emit('gamePaused', {});
-    }
-  });
-
-  socket.on('resumeGame', ({ sessionId }) => {
-    if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
-        sessions[sessionId].state = 'active'; // Mark the game as active again
-        io.to(sessionId).emit('gameResumed'); // Notify all clients the game has resumed
-        console.log(`Game resumed in session ${sessionId}`);
+        sessions[sessionId].state = 'paused';
+        clearTimeout(sessions[sessionId].questionTimeout); // Clear existing timer
+        io.to(sessionId).emit('gamePaused', {});
+        console.log(`Game paused in session ${sessionId}`);
     }
 });
+
+// When resuming the game, start a new 10-second timer.
+socket.on('resumeGame', ({ sessionId }) => {
+    const session = sessions[sessionId];
+    if (session && socket.id === session.admin) {
+        session.state = 'active';
+        session.timer = 10; // Optionally reset the timer to 10 seconds upon resuming
+        manageTimer(sessionId); // Restart the timer countdown
+        io.to(sessionId).emit('gameResumed'); // Notify all clients the game has resumed
+    }
+});
+
+// Function to manage the timer
+function manageTimer(sessionId) {
+    const session = sessions[sessionId];
+    if (!session) return;
+
+    clearInterval(session.timerInterval); // Clear existing timer interval
+
+    session.timerInterval = setInterval(() => {
+        if (session.timer > 0) {
+            session.timer -= 1; // Decrement the timer
+            io.to(sessionId).emit('timerUpdate', { timer: session.timer });
+        } else {
+            clearInterval(session.timerInterval); // Stop the timer
+            io.to(sessionId).emit('timesUp', sessionId); // Notify clients that time is up
+        }
+    }, 1000); // Update every second
+}
 
 
 
@@ -121,28 +136,23 @@ socket.on('uploadQuestions', ({ sessionId, questions }) => {
 });
 
 
-socket.on('nextQuestion', ({ sessionId }) => {  
-    if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
-        sessions[sessionId].currentQuestionIndex += 1;
-        if (sessions[sessionId].currentQuestionIndex < sessions[sessionId].questions.length) {
-            const currentQuestion = sessions[sessionId].questions[sessions[sessionId].currentQuestionIndex];
+socket.on('nextQuestion', ({ sessionId }) => {
+    const session = sessions[sessionId];
+    if (session && socket.id === session.admin) {
+        session.currentQuestionIndex += 1;
+        if (session.currentQuestionIndex < session.questions.length) {
+            const currentQuestion = session.questions[session.currentQuestionIndex];
             console.log(`Moving to next question in session ${sessionId}`);
 
-            // Emit the question and solution to the session, possibly for the admin
-            io.to(sessionId).emit('question', { question: currentQuestion.question, solution: currentQuestion.solution, sessionId });
+            // Reset the timer
+            session.timer = 10; // Reset the timer to 10 seconds for the new question
+            manageTimer(sessionId); // Manage the countdown and emit the timer updates
 
-            // If you want to emit a different format for players, ensure it's structured correctly
-            // For example, to send only the question text to players, adjust the logic accordingly
-            // This assumes your client logic differentiates based on the message content or structure
-
-            // Remove the incorrect emit to avoid confusion and ensure the client-side logic correctly handles the received data
-
-            // Start a 10-second timer
-            clearTimeout(sessions[sessionId].questionTimeout);
-            sessions[sessionId].questionTimeout = setTimeout(() => {
-                console.log(`Time's up for question in session ${sessionId}`);
-                io.to(sessionId).emit('timesUp', sessionId);
-            }, 10000); // 10 seconds
+            io.to(sessionId).emit('question', {
+                question: currentQuestion.question,
+                solution: currentQuestion.solution,
+                sessionId,
+            });
         } else {
             console.log(`Game over in session ${sessionId}`);
             io.to(sessionId).emit('gameOver', { sessionId });

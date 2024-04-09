@@ -66,7 +66,6 @@ socket.on('question', ({ question, solution }) => {
     const interval = setInterval(() => {
         setTimer((prevTimer) => prevTimer > 0 ? prevTimer - 1 : 0);
     }, 1000);
-    setTimeout(() => clearInterval(interval), 10000); // Clear interval after 10 seconds
 });
 
 
@@ -157,8 +156,11 @@ const handleAdminDecision = (decision, points = 0) => {
     // If the decision involves awarding points, handle it accordingly
     if (decision === 'correct') {
         awardPoints(1); // Assuming 1 point for a correct answer, adjust as needed
+        setIsGamePaused(false); // Resume the game
+
     } else if (decision === 'incorrect') {
         awardPoints(0); // No points for an incorrect answer
+        setIsGamePaused(false); // Resume the game
     }
 
     // After handling the decision, ensure the game state is reset correctly

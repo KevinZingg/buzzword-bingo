@@ -27,6 +27,20 @@ const Player = () => {
   useEffect(() => {
     let interval;
 
+    const handleTimer = () => {
+      if (!isGamePaused && timer > 0) {
+        // Using a single setInterval managed by the timer and pause state
+        const intervalId = setInterval(() => {
+          setTimer((prevTimer) => prevTimer - 1);
+        }, 1000);
+        return () => clearInterval(intervalId);
+      }
+    };
+
+    socket.on('timerUpdate', ({ timer }) => {
+      setTimer(timer); // Update the local state with the server's timer value
+  });
+
     if (!isGamePaused && currentQuestion) {
       // Assuming you only want the timer to run when the game is active and a question is set
       interval = setInterval(() => {
@@ -56,7 +70,8 @@ const Player = () => {
 
     socket.on('question', ({ question }) => {
       setCurrentQuestion(question); // Assuming question is the text of the question
-      setTimer(10); // Reset timer
+      setTimer(10); // Reset timer when a new question is received
+      setIsGamePaused(false); // Ensure game is resumed when a new question comes in
     });
     
   
@@ -67,9 +82,9 @@ const Player = () => {
         }
     });
 
-    socket.on('gamePaused', ({ playerName }) => {
+    socket.on('gamePaused', () => {
       setIsGamePaused(true);
-      clearInterval(interval);
+      // No need to clearInterval here as the useEffect cleanup will handle it
     });
   
 
@@ -101,10 +116,10 @@ const Player = () => {
       socket.off('updatePlayerList');
       socket.off('updateLeaderboard');
       clearInterval(interval);
-      socket.off('gamePaused');
       socket.off('gameResumed');
+      socket.off('timerUpdate');
     };
-  }, [isGamePaused, currentQuestion, sessionId, name, socket]); // Include name in dependencies
+  }, [isGamePaused, currentQuestion, sessionId, name, socket, timer]); // Include name in dependencies
 
   const joinSession = () => {
     console.log(`${name} attempting to join session ${sessionId}`);
@@ -119,6 +134,7 @@ const Player = () => {
 
   socket.on('gameResumed', () => {
     setIsGamePaused(false);
+    setTimer(10); // Reset timer to 10 when game is resumed
   });
 
 
