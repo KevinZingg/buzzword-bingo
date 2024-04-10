@@ -68,15 +68,16 @@ socket.on('awardPoints', ({ sessionId, points }) => {
 
 
 
-// When pausing the game, clear the existing timer.
+// When pausing the game, clear the existing timer interval as well.
 socket.on('pauseGame', ({ sessionId }) => {
     if (sessions[sessionId] && socket.id === sessions[sessionId].admin) {
         sessions[sessionId].state = 'paused';
-        clearTimeout(sessions[sessionId].questionTimeout); // Clear existing timer
+        clearInterval(sessions[sessionId].timerInterval); // Clear existing timer interval
         io.to(sessionId).emit('gamePaused', {});
-        console.log(`Game paused in session ${sessionId}`);
+        console.log(`Debug: Game paused in session ${sessionId}`);
     }
 });
+
 
 // When resuming the game, start a new 10-second timer.
 socket.on('resumeGame', ({ sessionId }) => {
@@ -167,7 +168,7 @@ socket.on('startGame', ({ sessionId }) => {
 socket.on('buzz', ({ sessionId, playerName }) => {
     const session = sessions[sessionId];
     if (session && session.state === 'active') {
-        clearTimeout(session.questionTimeout); // Cancel the timer
+
         session.state = 'paused';
         session.buzzedPlayer = { name: playerName, id: socket.id };
         console.log(`${playerName} buzzed in session ${sessionId}`);
@@ -239,16 +240,21 @@ function manageTimer(sessionId) {
         return;
     }
 
-    // Ensure the timer starts at the desired value (e.g., 10 seconds) before this function is called the first time.
-    console.log(`Initial timer value for session ${sessionId}: ${session.timer}`);
+    console.log(`Debug: Initial timer value for session ${sessionId}: ${session.timer}`);
 
     clearInterval(session.timerInterval); // Clear any existing timer interval
 
     session.timerInterval = setInterval(() => {
-        console.log(`Interval check for session ${sessionId}, Timer: ${session.timer}`); // Debugging: Confirm this line executes
+        // Check if the game is paused. If so, skip the timer decrement logic
+        if (session.state === 'paused') {
+            console.log(`Debug: Timer paused for session ${sessionId}`);
+            return; // Skip the timer decrement and subsequent logic
+        }
+
+        console.log(`Debug: Interval check for session ${sessionId}, Timer: ${session.timer}`);
         if (session.timer > 0) {
             session.timer -= 1;
-            console.log(`Timer decremented for session ${sessionId}, New Timer: ${session.timer}`); // Debugging: Confirm the timer decrements
+            console.log(`Debug: Timer decremented for session ${sessionId}, New Timer: ${session.timer}`);
             io.to(sessionId).emit('timerUpdate', { timer: session.timer });
         } else {
             clearInterval(session.timerInterval); // Stop the timer
@@ -257,6 +263,7 @@ function manageTimer(sessionId) {
         }
     }, 1000); // Update every second
 }
+
 
 function generateSessionId() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
