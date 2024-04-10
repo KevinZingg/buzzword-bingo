@@ -130,7 +130,7 @@ const Player = () => {
       transition={{ duration: 0.5 }}
       className="flex flex-col items-center justify-center min-h-screen bg-cream-100"
     >
-      <h2 className="text-2xl font-bold text-gray-700">Player Join</h2>
+      <h2 className="text-2xl font-bold text-gray-700">Spieler Beitretten</h2>
       {!hasJoined ? (
         <>
           <input
@@ -142,20 +142,20 @@ const Player = () => {
           />
           <input
             type="text"
-            placeholder="Your Name"
+            placeholder="Dein Name"
             value={name}
             onChange={e => setName(e.target.value)}
             className={inputStyle}
           />
-          <button onClick={joinSession} className={buttonStyle}>Join Game</button>
+          <button onClick={joinSession} className={buttonStyle}>Spiel Beitretten</button>
         </>
       ) : (
         <>
-<h3 className="text-xl font-semibold">Welcome, {name}!</h3>
+<h3 className="text-xl font-semibold">Wilkommen, {name}!</h3>
 <button onClick={buzzIn} className={buttonStyle}>Buzz</button>
 {currentQuestion && (
   <div className="mt-4 p-4 bg-blue-100 rounded-lg shadow-lg">
-    <h4 className="text-lg font-bold">Current Question:</h4>
+    <h4 className="text-lg font-bold">Aktuelle Frage:</h4>
     <p className="text-lg">{currentQuestion || "Waiting for question..."}</p>
     <p>Timer: {timer}</p>
   </div>

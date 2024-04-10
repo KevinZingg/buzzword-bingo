@@ -23,7 +23,7 @@ const Home = ({ onRoleSelected }) => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        Welcome to Buzzword Bingo!
+        Wilkommen zu Buzzword Bingo!
       </motion.h1>
       <motion.button
         whileHover="hover"
@@ -32,7 +32,7 @@ const Home = ({ onRoleSelected }) => {
         onClick={() => onRoleSelected('admin')}
         className="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-md m-2"
       >
-        Game Leader
+        Spiel Admin
       </motion.button>
       <motion.button
         whileHover="hover"
@@ -41,7 +41,7 @@ const Home = ({ onRoleSelected }) => {
         onClick={() => onRoleSelected('player')}
         className="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-md m-2"
       >
-        Player
+        Spieler
       </motion.button>
     </div>
   );

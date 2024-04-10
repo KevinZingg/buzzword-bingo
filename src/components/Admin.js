@@ -243,36 +243,36 @@ const togglePauseResumeGame = () => {
                         <>
                             <input type="file" onChange={handleFileChange} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
                             <div className="flex flex-wrap justify-center">
-                                <button onClick={uploadQuestions} className={buttonStyle}>Upload Questions</button>
-                                <button onClick={startGame} className={buttonStyle}>Start Game</button>
+                                <button onClick={uploadQuestions} className={buttonStyle}>Fragen Hochladen als .csv</button>
+                                <button onClick={startGame} className={buttonStyle}>Spiel Starten</button>
                             </div>
                         </>
                     )}
                     {gamePhase === 'duringGame' && (
                         <>
-                            <button onClick={nextQuestion} className={buttonStyle}>Next Question</button>
+                            <button onClick={nextQuestion} className={buttonStyle}>Nächste Frage</button>
                             <button onClick={togglePauseResumeGame} className={buttonStyle}>
-                                {isGamePaused ? "Resume Game" : "Pause Game"}
+                                {isGamePaused ? "Spiel Fortführen" : "Spiel Pausieren"}
                             </button>                           <button onClick={closeGame} className={buttonStyle}>Close Game</button>
                             {currentQuestion && (
                                 <div className="text-center p-4 bg-blue-100 rounded-lg shadow">
-                                    <h3 className="text-xl font-semibold">Current Question:</h3>
+                                    <h3 className="text-xl font-semibold">Aktuelle Frage:</h3>
                                     <p className="text-lg">{currentQuestion.text || "Waiting for question..."}</p>
-                                    <h4 className="text-xl font-semibold">Answer:</h4>
+                                    <h4 className="text-xl font-semibold">Antowrt:</h4>
                                     <p className="text-lg">{currentQuestion.solution || "Waiting for solution..."}</p>
-                                    <p>Time left: {timer} seconds</p>
+                                    <p>Zeit Übrig: {timer} sekunden</p>
                                     <Leaderboard players={leaderboardPlayers} />
                                 </div>
                             )}
 
 {buzzedPlayer && (
     <div className={`mt-4 p-4 ${isGamePaused ? 'bg-orange-100' : 'bg-yellow-100'} rounded-lg shadow`}>
-        <p className="text-lg">{buzzedPlayer} buzzed in. Decide on points:</p>
+        <p className="text-lg">{buzzedPlayer} Gebuzzed. Punkt entscheiden:</p>
         <button onClick={() => handleAdminDecision('correct')} className={buttonStyle + " bg-green-500 hover:bg-green-600"}>
-            Correct
+            Richtig
         </button>
         <button onClick={() => handleAdminDecision('incorrect')} className={buttonStyle + " bg-red-500 hover:bg-red-600"}>
-            Incorrect
+            Falsch
         </button>
     </div>
 )}
@@ -283,7 +283,7 @@ const togglePauseResumeGame = () => {
                 </div>
             )}
             {!sessionId && (
-                <button onClick={createSession} className={buttonStyle}>Create Game Session</button>
+                <button onClick={createSession} className={buttonStyle}>Game Session Erstellen</button>
             )}
         </motion.div>
     );
