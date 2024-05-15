@@ -4,7 +4,7 @@ import io from 'socket.io-client';
 import Leaderboard from './Leaderboard';
 import { motion } from 'framer-motion';
 
-const socket = io('http://localhost:3001');
+const socket = io('https://localhost:3001');
 
 const Player = () => {
   const [sessionId, setSessionId] = useState('');

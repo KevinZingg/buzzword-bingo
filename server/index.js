@@ -1,13 +1,22 @@
 // server/index.js
 const express = require('express');
-const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const { Server } = require("socket.io");
 
 const app = express();
-const server = http.createServer(app);
+
+// Read the certificate and key from the same directory
+const privateKey = fs.readFileSync('app.workshop.local.key', 'utf8');
+const certificate = fs.readFileSync('app.workshop.local.crt', 'utf8');
+
+const credentials = { key: privateKey, cert: certificate };
+
+// Creating HTTPS server with the SSL credentials
+const server = https.createServer(credentials, app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // For development ease, allow all origins
+    origin: "*", // Adjust this as needed in production
     methods: ["GET", "POST"],
   },
 });
